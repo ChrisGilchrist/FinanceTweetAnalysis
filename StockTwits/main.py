@@ -24,7 +24,11 @@ serializer = JSONSerializer()
 topic_name = os.environ["output"]
 topic = app.topic(topic_name)
 
-
+# Create a pre-configured Producer object.
+# Producer is already setup to use Quix brokers.
+# It will also ensure that the topics exist before producing to them if
+# Application.Quix is initiliazed with "auto_create_topics=True".
+producer = app.get_producer()
 
 # Define the path to the zip file
 zip_file_path = 'messages.csv.zip'
@@ -54,6 +58,14 @@ if csv_file_path:
         # Get the value of the first cell in the row
         first_cell_value = row.iloc[0]
         print(first_cell_value)
+
+        # publish the data to the topic
+        producer.produce(
+            topic='messages',
+            key='message',
+            value=first_cell_value
+        )
+
         # Wait for one second
         time.sleep(1)
 
