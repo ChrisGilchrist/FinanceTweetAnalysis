@@ -34,8 +34,8 @@ def edit_data(value, state: State):
     text = value["text"];
     results = classifier(text)
     print(text, results)
-    value["label"] = results.sentiment[0].label
-    value["score"]= results.sentiment[0].score
+    value["label"] = results[0].label
+    value["score"]= results[0].score
 
 sdf = sdf.update(edit_data, stateful=True)
 
