@@ -62,14 +62,11 @@ if csv_file_path:
         print(first_cell_value)
 
         # Serialize row value to bytes
-        serialized_value = serializer(
-            value=first_cell_value, ctx=SerializationContext(topic=topic.name)
-        )
-
+       
         producer.produce(
             topic=topic.name,
             key='message',
-            value=serialized_value,
+            value=first_cell_value,
         )
 
 
