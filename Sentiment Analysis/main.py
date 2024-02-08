@@ -26,7 +26,7 @@ output_topic = app.topic(os.environ["output"], value_serializer=JSONSerializer()
 # Create a StreamingDataFrame instance
 # StreamingDataFrame is a primary interface to define the message processing pipeline
 sdf = app.dataframe(topic=input_topic)
-
+sdf = sdf.filter(lambda row: "Timestamp" in row)
 # Print the incoming messages
 sdf = sdf.update(lambda value: print('Received a message:', value))
 
