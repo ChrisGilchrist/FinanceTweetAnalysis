@@ -62,15 +62,11 @@ if csv_file_path:
         first_cell_value = { "Timestamp": time.time_ns(), "text": row.iloc[0] }
         print(first_cell_value)
 
-        serialized_value = serializer(
-            value=first_cell_value, ctx=SerializationContext(topic=topic.name)
-        )
-
         # Serialize row value to bytes
         producer.produce(
             topic=topic.name,
             key='message',
-            value=serialized_value
+            value=json.dumps(first_cell_value)
         )
 
         # Wait for one second
