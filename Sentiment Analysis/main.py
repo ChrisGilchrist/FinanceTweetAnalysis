@@ -2,6 +2,7 @@ import os
 from quixstreams import Application, State
 from quixstreams.models.serializers.quix import JSONDeserializer, JSONSerializer
 from transformers import pipeline
+import json
 
 # import our get_app function to help with building the app for local/Quix deployed code
 from app_factory import get_app
@@ -19,7 +20,7 @@ app = get_app(use_local_kafka=USE_LOCAL_KAFKA)
 # Set the pipeline
 classifier = pipeline("text-classification", model="StephanAkkerman/FinTwitBERT-sentiment")
 
-input_topic = app.topic(os.environ["input"], value_deserializer=JSONDeserializer())
+input_topic = app.topic(os.environ["input"], value_deserializer=json.loads())
 output_topic = app.topic(os.environ["output"], value_serializer=JSONSerializer())
 
 # Create a StreamingDataFrame instance
