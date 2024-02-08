@@ -29,5 +29,4 @@ sdf = app.dataframe(topic=input)
 # Print the incoming messages
 sdf = sdf.update(lambda value: print('Received a message:', value))
 
-if __name__ == "__main__":
-    app.run(sdf)
+app.run(sdf)
