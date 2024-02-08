@@ -3,6 +3,7 @@ import pandas as pd
 import zipfile
 import time
 from quixstreams import Application
+from quixstreams.models.serializers.quix import JSONSerializer, SerializationContext
 
 
 # import our get_app function to help with building the app for local/Quix deployed code
@@ -21,6 +22,9 @@ app = get_app(use_local_kafka=USE_LOCAL_KAFKA)
 # Define the topic using the "output" environment variable
 topic_name = os.environ["output"]
 topic = app.topic(topic_name)
+
+# Define a serializer for messages, using JSON Serializer for ease
+serializer = JSONSerializer()
 
 # Create a pre-configured Producer object.
 # Producer is already setup to use Quix brokers.
@@ -58,11 +62,22 @@ if csv_file_path:
         print(first_cell_value)
 
         # publish the data to the topic
+        # producer.produce(
+        #    topic=topic.name,
+        #    key='message',
+        #    value=first_cell_value
+        #)
+        # Serialize row value to bytes
+        serialized_value = serializer(
+            value=first_cell_value, ctx=SerializationContext(topic=topic.name)
+        )
+
         producer.produce(
             topic=topic.name,
             key='message',
-            value=first_cell_value
+            value=serialized_value,
         )
+
 
         # Wait for one second
         time.sleep(1)
