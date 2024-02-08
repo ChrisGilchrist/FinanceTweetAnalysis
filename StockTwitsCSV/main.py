@@ -26,6 +26,8 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 csv_file_path = os.path.join(script_dir, "demo-data.csv")
 
 
+# Define the path to the zip file
+zip_file_path = 'messages.csv.zip'
 
 # this function loads the file and sends each row to the publisher
 def read_csv_file(file_path: str):
@@ -75,27 +77,43 @@ def main():
     """
     Read data from the CSV file and publish it to Kafka
     """
+    # Extract the contents of the zip file to a temporary directory
+    with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+        # Extract all the contents to a temporary directory
+        zip_ref.extractall('temp')
 
-    # Create a pre-configured Producer object.
-    # Producer is already setup to use Quix brokers.
-    # It will also ensure that the topics exist before producing to them if
-    # Application.Quix is initiliazed with "auto_create_topics=True".
-    producer = app.get_producer()
+    # Find the CSV file inside the temporary directory
+    csv_file_path = None
+    for root, dirs, files in os.walk('temp'):
+        for file in files:
+            if file.endswith('.csv'):
+                csv_file_path = os.path.join(root, file)
+                break
+        if csv_file_path:
+            break
 
-    with producer:
-        # Iterate over the data from CSV file
-        for message_key, row_data in read_csv_file(file_path=csv_file_path):
-            # Serialize row value to bytes
-            serialized_value = serializer(
-                value=row_data, ctx=SerializationContext(topic=topic.name)
-            )
+    # Check if the CSV file was found
+    if csv_file_path:
+        # Create a pre-configured Producer object.
+        # Producer is already setup to use Quix brokers.
+        # It will also ensure that the topics exist before producing to them if
+        # Application.Quix is initiliazed with "auto_create_topics=True".
+        producer = app.get_producer()
 
-            # publish the data to the topic
-            producer.produce(
-                topic=topic.name,
-                key=message_key,
-                value=serialized_value,
-            )
+        with producer:
+            # Iterate over the data from CSV file
+            for message_key, row_data in read_csv_file(file_path=csv_file_path):
+                # Serialize row value to bytes
+                serialized_value = serializer(
+                    value=row_data, ctx=SerializationContext(topic=topic.name)
+                )
+
+                # publish the data to the topic
+                producer.produce(
+                    topic=topic.name,
+                    key=message_key,
+                    value=serialized_value,
+                )
 
 
 if __name__ == "__main__":
