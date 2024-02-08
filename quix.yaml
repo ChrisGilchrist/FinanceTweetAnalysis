@@ -9,7 +9,7 @@ deployments:
   - name: StockTwits
     application: StockTwits
     deploymentType: Service
-    version: 4a0b5e17668ac6a037058059b621e6b8aec73e2b
+    version: 894528b873c69b1334850bdbdb812f83dc416b90
     resources:
       cpu: 200
       memory: 500
