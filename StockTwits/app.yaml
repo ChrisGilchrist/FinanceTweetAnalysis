@@ -4,7 +4,7 @@ variables:
   - name: output
     inputType: OutputTopic
     description: This is the output topic to write data to
-    defaultValue: messages2
+    defaultValue: messages4
     required: true
 dockerfile: dockerfile
 runEntryPoint: main.py
