@@ -1,2 +1,2 @@
 quixstreams==0.5.7
-zipfile
+zipfile36 0.1.3
