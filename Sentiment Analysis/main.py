@@ -29,4 +29,6 @@ sdf = app.dataframe(topic=input)
 # Print the incoming messages
 sdf = sdf.update(lambda value: print('Received a message:', value))
 
-app.run(sdf)
+if __name__ == "__main__":
+    # Run the streaming application 
+    app.run(sdf)
