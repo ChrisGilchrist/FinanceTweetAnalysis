@@ -61,12 +61,6 @@ if csv_file_path:
         first_cell_value = row.iloc[0]
         print(first_cell_value)
 
-        # publish the data to the topic
-        # producer.produce(
-        #    topic=topic.name,
-        #    key='message',
-        #    value=first_cell_value
-        #)
         # Serialize row value to bytes
         serialized_value = serializer(
             value=first_cell_value, ctx=SerializationContext(topic=topic.name)
