@@ -3,7 +3,6 @@ import pandas as pd
 import zipfile
 import time
 from quixstreams import Application
-from quixstreams.models.serializers.quix import JSONSerializer, SerializationContext
 
 
 # import our get_app function to help with building the app for local/Quix deployed code
