@@ -69,7 +69,7 @@ if csv_file_path:
         producer.produce(
             topic=topic.name,
             key='message',
-            value=first_cell_value,
+            value=serialized_value
         )
 
         # Wait for one second
