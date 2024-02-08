@@ -29,13 +29,14 @@ sdf = app.dataframe(topic=input_topic)
 sdf = sdf.filter(lambda row: "Timestamp" in row)
 # Print the incoming messages
 # sdf = sdf.update(lambda value: print('Received a message:', value))
-sdf = sdf.update(edit_data, stateful=True)
 
 def edit_data(value, state: State):
     text = value["text"];
     results = classifier(value)
     print(text, results)
     value["sentiment"] = results
+
+sdf = sdf.update(edit_data, stateful=True)
 
 # Produce the result to the output topic 
 sdf = sdf.to_topic(output_topic)
