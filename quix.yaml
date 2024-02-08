@@ -20,7 +20,7 @@ deployments:
         inputType: OutputTopic
         description: This is the output topic to write data to
         required: true
-        value: messages2
+        value: messages
   - name: Sentiment Analysis
     application: Sentiment Analysis
     deploymentType: Service
