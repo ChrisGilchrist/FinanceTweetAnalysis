@@ -7,11 +7,13 @@
         <div class="d-flex flex-column h-100 w-100 border rounded overflow-hidden p-3" [style.maxWidth.px]="600">
 
           <h5 class="mb-3">StockTwits Sentiment Analysis</h5>
-          <p>Sentiment Analysis of a dataset of messages from StockTwits. Using model 
+          <p class="date text-grey">Sentiment Analysis of a 
+            <a href="https://huggingface.co/datasets/ElKulako/stocktwits-crypto">dataset</a>
+            of messages from StockTwits. Using model 
             <a href="https://huggingface.co/StephanAkkerman/FinTwitBERT-sentiment" target="_blank">StephanAkkerman/FinTwitBERT-sentiment</a>
             to determine whether it's 
-            <span class="date text-success fw-bold">BULLISH</span> or
-            <span class="date text-danger fw-bold">BEARISH</span> with the market.
+            <span class="text-success fw-bold">BULLISH</span> or
+            <span class="text-danger fw-bold">BEARISH</span> with the market.
           </p>
 
           <div class="d-flex flex-column h-100 w-100 overflow-auto">
@@ -30,10 +32,10 @@
                   <div 
                   [class.text-success]="message.sentiment.label === 'BULLISH'"
                   [class.text-danger]="message.sentiment.label === 'BEARISH'"
-                  [class.text-light-grey]="message.sentiment.label === 'NEUTRAL'"
+                  [class.text-grey-light]="message.sentiment.label === 'NEUTRAL'"
                   class="fw-bold date">{{ message.sentiment.label }}</div>
                 </div>
-                <div class="fw-bold date">{{ message.sentiment.score | number : '1.2-2' }}</div> 
+                <div class="fw-bold text-grey date">{{ message.sentiment.score | number : '1.2-2' }}</div> 
               </div>
             </div>
           </div>
