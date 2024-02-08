@@ -59,7 +59,7 @@ if csv_file_path:
 
         # publish the data to the topic
         producer.produce(
-            topic='messages',
+            topic=topic.name,
             key='message',
             value=first_cell_value
         )
