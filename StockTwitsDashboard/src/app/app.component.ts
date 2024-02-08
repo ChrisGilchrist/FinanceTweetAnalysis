@@ -68,7 +68,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   messageReceived(payload: ParameterData): void {
     const { topicName } = payload;
-    const timestamp = payload.timestamps?.at(0)!;
+    const timestamp = payload.timestamps?.at(0)! / 1000000;
     const label = payload.stringValues['label']?.at(0)!;
     const text = payload.stringValues['text']?.at(0)!;
     const score = payload.numericValues['score']?.at(0)!;

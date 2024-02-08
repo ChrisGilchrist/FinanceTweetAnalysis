@@ -1,65 +1,48 @@
-<!-- <div class="d-flex flex-column p-3">
-  <div class="d-flex border rounded p-2 mb-2" *ngFor="let message of messages">
-    <div class="d-flex flex-column me-4">
-      <div>{{ message.message }}</div>
-      <div>{{ message.timestamp }}</div>
-    </div>
-    <div class="d-flex flex-column align-items-center">
-      <div>{{ message.sentiment.label }}</div>
-      <div>{{ message.sentiment.score }}</div> 
-    </div>
-  </div>
-</div> -->
-
 <mat-drawer-container class="d-flex flex-column h-100">
   <mat-drawer-content class="d-flex flex-column h-100 p-4">
     <main class="flex-fill overflow-hidden">
 
       <div class="d-flex h-100 flex-column justify-content-center align-items-center overflow-auto">
 
-        <div class="d-flex flex-column h-100 w-100 border rounded overflow-auto p-3" [style.maxWidth.px]="400">
+        <div class="d-flex flex-column h-100 w-100 border rounded overflow-hidden p-3" [style.maxWidth.px]="600">
 
-          <div class="d-flex border rounded p-2 mb-2 justify-content-between" *ngFor="let message of messages">
-            <div class="d-flex flex-column me-4">
-              <div class="message fw-bold">{{ message.message }}</div>
-              <div class="date">{{ message.timestamp }}</div>
-            </div>
-            <div class="d-flex flex-column align-items-center">
-              <div class="d-flex flex-column align-items-center">
-                <div>
-                  <span *ngIf="message.sentiment.label === 'BULLISH'">⬆️</span>
-                  <span *ngIf="message.sentiment.label === 'NEUTRAL'">😬</span>
-                  <span *ngIf="message.sentiment.label === 'BEARISH'">⬇️</span>
-                </div>
-                <div 
-                [class.text-success]="message.sentiment.label === 'BULLISH'"
-                [class.text-danger]="message.sentiment.label === 'BEARISH'"
-                class="fw-bold date">{{ message.sentiment.label }}</div>
+          <h5 class="mb-3">StockTwits Sentiment Analysis</h5>
+          <p>Sentiment Analysis of a dataset of messages from StockTwits. Using model 
+            <a href="https://huggingface.co/StephanAkkerman/FinTwitBERT-sentiment" target="_blank">StephanAkkerman/FinTwitBERT-sentiment</a>
+            to determine whether it's 
+            <span class="date text-success fw-bold">BULLISH</span> or
+            <span class="date text-danger fw-bold">BEARISH</span> with the market.
+          </p>
+
+          <div class="d-flex flex-column h-100 w-100 overflow-auto">
+            <div class="d-flex border rounded p-2 mb-2 justify-content-between" *ngFor="let message of messages">
+              <div class="d-flex flex-column me-4">
+                <div class="message mb-2">{{ message.message }}</div>
+                <div class="date text-grey-light">{{ message.timestamp | date: 'medium' }}</div>
               </div>
-              <div class="fw-bold date">{{ message.sentiment.score | number : '1.2-2' }}</div> 
+              <div class="d-flex flex-column align-items-center">
+                <div class="d-flex flex-column align-items-center">
+                  <div>
+                    <span *ngIf="message.sentiment.label === 'BULLISH'">🐂</span>
+                    <span *ngIf="message.sentiment.label === 'NEUTRAL'">😐</span>
+                    <span *ngIf="message.sentiment.label === 'BEARISH'">🐻</span>
+                  </div>
+                  <div 
+                  [class.text-success]="message.sentiment.label === 'BULLISH'"
+                  [class.text-danger]="message.sentiment.label === 'BEARISH'"
+                  [class.text-light-grey]="message.sentiment.label === 'NEUTRAL'"
+                  class="fw-bold date">{{ message.sentiment.label }}</div>
+                </div>
+                <div class="fw-bold date">{{ message.sentiment.score | number : '1.2-2' }}</div> 
+              </div>
             </div>
           </div>
 
+        
+
         </div>
      
-
       </div>
-
     </main>
-
-
   </mat-drawer-content>
 </mat-drawer-container>
-
-<!-- <div class="d-flex justify-content-center align-items-center" [style.height.vh]="100">
-
-  <mat-card class="d-flex p-0 h-100 w-100" [style.maxWidth.px]="440">
-    <p class="text-danger mat-body-2">lkjdkfldj</p>Hello
-
-    <mat-form-field>
-      <input>
-    </mat-form-field>
-
-  </mat-card>
-
-</div> -->
