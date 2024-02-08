@@ -16,7 +16,7 @@ import os
 import time
 
 # Define the path to the zip file
-zip_file_path = 'chris.zip'
+zip_file_path = 'messages.csv.zip'
 
 # Extract the contents of the zip file to a temporary directory
 with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
@@ -27,7 +27,7 @@ with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
 excel_file_path = None
 for root, dirs, files in os.walk('temp'):
     for file in files:
-        if file.endswith('.xlsx'):
+        if file.endswith('.csv'):
             excel_file_path = os.path.join(root, file)
             break
     if excel_file_path:
