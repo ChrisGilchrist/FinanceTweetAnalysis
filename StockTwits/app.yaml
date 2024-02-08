@@ -1,7 +1,7 @@
 name: StockTwits
 language: python
 variables:
-  - name: output
+  - name: output2
     inputType: OutputTopic
     description: This is the output topic to write data to
     defaultValue: messages
