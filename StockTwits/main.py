@@ -61,14 +61,16 @@ if csv_file_path:
         first_cell_value = row.iloc[0]
         print(first_cell_value)
 
+        serialized_value = serializer(
+            value=first_cell_value, ctx=SerializationContext(topic=topic.name)
+        )
+
         # Serialize row value to bytes
-       
         producer.produce(
             topic=topic.name,
             key='message',
-            value=first_cell_value,
+            value=serialized_value,
         )
-
 
         # Wait for one second
         time.sleep(1)
