@@ -5,7 +5,22 @@ metadata:
   version: 1.0
 
 # This section describes the Deployments of the data pipeline
-deployments: []
+deployments:
+  - name: StockTwits
+    application: StockTwits
+    deploymentType: Service
+    version: d7f99b218e4a03ab4a3ffd267653ee63249dd7a3
+    resources:
+      cpu: 200
+      memory: 500
+      replicas: 1
+    desiredStatus: Running
+    variables:
+      - name: output
+        inputType: OutputTopic
+        description: This is the output topic to write data to
+        required: true
+        value: messages
 
 # This section describes the Topics of the data pipeline
 topics:
