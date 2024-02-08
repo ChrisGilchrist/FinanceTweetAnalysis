@@ -34,8 +34,8 @@ sdf = sdf.update(edit_data, stateful=True)
 def edit_data(value, state: State):
     text = value["text"];
     results = classifier(value)
-    print(results)
-    value["sentiment"] results
+    print(text, results)
+    value["sentiment"] = results
 
 # Produce the result to the output topic 
 sdf = sdf.to_topic(output_topic)
