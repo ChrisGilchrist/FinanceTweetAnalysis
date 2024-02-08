@@ -21,11 +21,6 @@ serializer = JSONSerializer()
 topic_name = os.environ["output"]
 topic = app.topic(topic_name)
 
-# Get the directory of the current script
-script_dir = os.path.dirname(os.path.realpath(__file__))
-# Construct the path to the CSV file
-csv_file_path = os.path.join(script_dir, "demo-data.csv")
-
 # Define the path to the zip file
 zip_file_path = 'messages.csv.zip'
 
@@ -102,7 +97,7 @@ def main():
 
         with producer:
             # Iterate over the data from CSV file
-            for message_key, row_data in read_csv_file(file_path=zip_file_path):
+            for message_key, row_data in read_csv_file(file_path=csv_file_path):
                 # Serialize row value to bytes
                 serialized_value = serializer(
                     value=row_data, ctx=SerializationContext(topic=topic.name)
