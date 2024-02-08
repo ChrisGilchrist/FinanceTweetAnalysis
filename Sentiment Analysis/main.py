@@ -33,7 +33,7 @@ sdf = app.dataframe(topic=input_topic)
 def edit_data(value, state: State):
     text = value["text"];
     results = classifier(text)
-    print(text, results)
+    print('Sentiment - ', results)
     value["label"] = results[0].label
     value["score"]= results[0].score
 
