@@ -27,7 +27,7 @@ output_topic = app.topic(os.environ["output"], value_serializer=JSONSerializer()
 sdf = app.dataframe(topic=input_topic)
 
 # Print the incoming messages
-sdf = sdf.update(lambda value: print('Received a message:', value))
+# sdf = sdf.update(lambda value: print('Received a message:', value))
 
 if __name__ == "__main__":
     # Run the streaming application 
