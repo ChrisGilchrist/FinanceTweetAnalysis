@@ -1,6 +1,6 @@
 import os
 from quixstreams import Application, State
-from quixstreams.models.serializers.quix import JSONDeserializer, JSONSerializer
+from quixstreams.models.serializers.quix import JSONDeserializer, JSONSerializer, QuixTimeseriesSerializer
 from transformers import pipeline
 import json
 
@@ -21,7 +21,7 @@ app = get_app(use_local_kafka=USE_LOCAL_KAFKA)
 classifier = pipeline("text-classification", model="StephanAkkerman/FinTwitBERT-sentiment")
 
 input_topic = app.topic(os.environ["input"], value_deserializer="json")
-output_topic = app.topic(os.environ["output"], value_serializer="json")
+output_topic = app.topic(os.environ["output"], value_serializer=QuixTimeseriesSerializer)
 
 # Create a StreamingDataFrame instance
 # StreamingDataFrame is a primary interface to define the message processing pipeline
