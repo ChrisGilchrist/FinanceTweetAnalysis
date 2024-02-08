@@ -1,6 +1,6 @@
 import os
 from quixstreams import Application, State
-from quixstreams.models.serializers.quix import JSONDeserializer, JSONSerializer
+from quixstreams.models.serializers.quix import JSONDeserializer, JSONSerializer, QuixTimeseriesSerializer
 from transformers import pipeline
 import json
 
@@ -20,15 +20,27 @@ app = get_app(use_local_kafka=USE_LOCAL_KAFKA)
 # Set the pipeline
 classifier = pipeline("text-classification", model="StephanAkkerman/FinTwitBERT-sentiment")
 
-input_topic = app.topic(os.environ["input"])
-output_topic = app.topic(os.environ["output"], value_serializer=JSONSerializer())
+input_topic = app.topic(os.environ["input"], value_deserializer="json")
+output_topic = app.topic(os.environ["output"], value_serializer=QuixTimeseriesSerializer())
 
 # Create a StreamingDataFrame instance
 # StreamingDataFrame is a primary interface to define the message processing pipeline
 sdf = app.dataframe(topic=input_topic)
-
+# sdf = sdf.filter(lambda row: "Timestamp" in row)
 # Print the incoming messages
-sdf = sdf.update(lambda value: print('Received a message:', value))
+# sdf = sdf.update(lambda value: print('Received a message:', value))
+
+def edit_data(value, state: State):
+    text = value["text"];
+    results = classifier(text)
+    print('Sentiment - ', results)
+    value["label"] = results[0]['label']
+    value["score"]= results[0]['score']
+
+sdf = sdf.update(edit_data, stateful=True)
+
+# Produce the result to the output topic 
+sdf = sdf.to_topic(output_topic)
 
 if __name__ == "__main__":
     # Run the streaming application 

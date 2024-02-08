@@ -9,32 +9,73 @@ deployments:
   - name: StockTwits
     application: StockTwits
     deploymentType: Service
-    version: f06f924764f6004a1e2d1bd23d17ba2438279add
+    version: 47a757541da5e80f04353dc5c0274c21e5479b69
     resources:
       cpu: 200
       memory: 500
       replicas: 1
-    desiredStatus: Running
+    desiredStatus: Stopped
     variables:
       - name: output
         inputType: OutputTopic
         description: This is the output topic to write data to
         required: true
         value: messages
+  - name: Sentiment Analysis
+    application: Sentiment Analysis
+    deploymentType: Service
+    version: c64ca4fe41015ed0ff76930c9d61882fd0e59e80
+    resources:
+      cpu: 200
+      memory: 500
+      replicas: 1
+    desiredStatus: Stopped
+    variables:
+      - name: input
+        inputType: InputTopic
+        description: This is the input topic to read data from
+        required: true
+        value: messages
+      - name: output
+        inputType: OutputTopic
+        description: This is the output topic to write data to
+        required: true
+        value: messages-with-sentiment
 
 # This section describes the Topics of the data pipeline
 topics:
   - name: messages
-    persisted: false
+    persisted: true
     configuration:
       partitions: 1
       replicationFactor: 2
       retentionInMinutes: 1440
       retentionInBytes: 52428800
   - name: messages-with-sentiment
-    persisted: false
+    persisted: true
     configuration:
       partitions: 2
       replicationFactor: 2
       retentionInMinutes: 10080
+      retentionInBytes: 52428800
+  - name: messages2
+    persisted: true
+    configuration:
+      partitions: 1
+      replicationFactor: 2
+      retentionInMinutes: 1440
+      retentionInBytes: 52428800
+  - name: message3
+    persisted: true
+    configuration:
+      partitions: 1
+      replicationFactor: 2
+      retentionInMinutes: 1440
+      retentionInBytes: 52428800
+  - name: messages4
+    persisted: true
+    configuration:
+      partitions: 1
+      replicationFactor: 2
+      retentionInMinutes: 1440
       retentionInBytes: 52428800

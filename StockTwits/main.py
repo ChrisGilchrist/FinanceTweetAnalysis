@@ -59,12 +59,8 @@ if csv_file_path:
     # Iterate over each row in the DataFrame
     for index, row in df.iterrows():
         # Get the value of the first cell in the row
-        first_cell_value = { 'timestamp': time.time_ns(), 'text': row.iloc[0] }
+        first_cell_value = { "Timestamp": time.time_ns(), "text": row.iloc[0] }
         print(first_cell_value)
-
-        serialized_value = serializer(
-            value=first_cell_value, ctx=SerializationContext(topic=topic.name)
-        )
 
         # Serialize row value to bytes
         producer.produce(
