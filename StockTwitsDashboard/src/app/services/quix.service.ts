@@ -1,109 +1,275 @@
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import {HttpClient, HttpHeaders} from "@angular/common/http";
-import {combineLatest, of, Subject} from "rxjs";
-import {map} from "rxjs/operators";
-import {HubConnection, HubConnectionBuilder} from "@microsoft/signalr";
+import { HubConnection, HubConnectionBuilder, IHttpConnectionOptions } from '@microsoft/signalr';
+import { combineLatest, Observable, Subject } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { EventData } from '../models/eventData';
+import { ParameterData } from '../models/parameterPayload';
+
+export enum ConnectionStatus {
+  Connected = 'Connected',
+  Reconnecting = 'Reconnecting',
+  Offline = 'Offline'
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class QuixService {
+  // this is the token that will authenticate the user into the ungated product experience.
+  // ungated means no password or login is needed.
+  // the token is locked down to the max and everything is read only.
+  public ungatedToken: string = 'pat-f8339e65ca3e499b8775026991c72240';
 
   /*~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-*/
   /*WORKING LOCALLY? UPDATE THESE!*/
-  public workingLocally = false; // set to true if working locally
-  private token: string = ""; // Create a token in the Tokens menu and paste it here
-  public workspaceId: string = ""; // Look in the URL for the Quix Portal your workspace ID is after 'workspace='
-  public topic: string = ""; // get topic name from the Topics page in Quix portal
+  private token: string = 'pat-f8339e65ca3e499b8775026991c72240'; // Create a token in the Tokens menu and paste it here
+  private workingLocally = true; // set to true if working locally
+  
+  public workspaceId: string = 'chrishackathon-financetweetanalysis-dev'; // Look in the URL for the Quix Portal your workspace ID is after 'workspace='
+  public messagesTopic: string = 'messages'; // get topic name from the Topics page
+  public sentimentTopic: string = 'messages-with-sentiment'; // get topic name from the Topics page
   /*~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-*/
 
-  private domain = "";
-  readonly server = ""; // leave blank
+  private subdomain = 'platform'; // leave as 'platform'
+  readonly server = ''; // leave blank
 
-  private domainRegex = new RegExp("^https:\\/\\/portal-api\\.([a-zA-Z]+)\\.quix\\.ai")
-  private baseReaderUrl: string;
-  private connection: HubConnection;
-  InitCompleted: Subject<string> = new Subject<string>();
+  private readerReconnectAttempts: number = 0;
+  private writerReconnectAttempts: number = 0;
+  private reconnectInterval: number = 5000;
+  private hasReaderHubListeners: boolean = false;
+
+  public readerHubConnection: HubConnection;
+  public writerHubConnection: HubConnection;
+
+  private readerConnStatusChanged = new Subject<ConnectionStatus>();
+  readerConnStatusChanged$ = this.readerConnStatusChanged.asObservable();
+  private writerConnStatusChanged = new Subject<ConnectionStatus>();
+  writerConnStatusChanged$ = this.writerConnStatusChanged.asObservable();
+
+  paramDataReceived = new Subject<ParameterData>();
+  paramDataReceived$ = this.paramDataReceived.asObservable();
+
+  eventDataReceived = new Subject<EventData>();
+  eventDataReceived$ = this.eventDataReceived.asObservable();
+
+  private domainRegex = new RegExp(
+    "^https:\\/\\/portal-api\\.([a-zA-Z]+)\\.quix\\.ai"
+  );
 
   constructor(private httpClient: HttpClient) {
 
-    if(this.workingLocally) {
-      this.domain = "platform"; // default to prod
-
-      this.baseReaderUrl = "https://reader-" + this.workspaceId + "." + this.domain + ".quix.ai/hub";
-      return;
+    if(this.workingLocally){
+      this.messagesTopic = this.workspaceId + '-' + this.messagesTopic;
+      this.sentimentTopic = this.workspaceId + '-' + this.sentimentTopic;
+      this.setUpHubConnections(this.workspaceId);
     }
+    else {
+      const headers = new HttpHeaders().set('Content-Type', 'text/plain; charset=utf-8');
+      let bearerToken$ = this.httpClient.get(this.server + "bearer_token", {headers, responseType: 'text'});
+      let workspaceId$ = this.httpClient.get(this.server + 'workspace_id', {headers, responseType: 'text'});
+      let messagesTopic$ = this.httpClient.get(this.server + 'messages_topic', {headers, responseType: 'text'});
+      let sentimentTopic$ = this.httpClient.get(this.server + 'sentiment_topic', {headers, responseType: 'text'});
+      let portalApi$ = this.httpClient.get(this.server + "portal_api", {headers, responseType: 'text'})
 
-    const headers = new HttpHeaders().set('Content-Type', 'text/plain; charset=utf-8');
-
-    let sdkToken$ = this.httpClient.get(this.server + "sdk_token", {headers, responseType: 'text'});
-    let topic$ = this.httpClient.get(this.server + "processed_topic", {headers, responseType: 'text'});
-    let workspaceId$ =  this.httpClient.get(this.server + "workspace_id", {headers, responseType: 'text'});
-    let portalApi$ = this.httpClient.get(this.server + "portal_api", {headers, responseType: 'text'})
-
-    let value$ = combineLatest(
-        sdkToken$,
-        topic$,
+      let value$ = combineLatest([
+        // General
+        bearerToken$,
         workspaceId$,
-        portalApi$
-    ).pipe(map(([sdkToken, topic, workspaceId, portalApi])=>{
-      return {sdkToken, topic, workspaceId, portalApi};
-    }));
+        portalApi$,
 
-    value$.subscribe(vals => {
-      this.token = (vals.sdkToken).replace("\n", "");
-      this.workspaceId = (vals.workspaceId).replace("\n", "");
-      this.topic = (this.workspaceId + "-" + vals.topic).replace("\n", "");
+        // Topics
+        messagesTopic$,
+        sentimentTopic$,
 
-      let portalApi = vals.portalApi.replace("\n", "");
-      let matches = portalApi.match(this.domainRegex);
-      if(matches) {
-        this.domain = matches[1];
-      }
-      else {
-        this.domain = "platform"; // default to prod
-      }
+      ]).pipe(map(([bearerToken, workspaceId,  portalApi, messagesTopic, sentimentTopic]) => {
+        return {bearerToken, workspaceId, portalApi, messagesTopic, sentimentTopic};
+      }));
 
-      // don't change this
-      this.baseReaderUrl = "https://reader-" + this.workspaceId + "." + this.domain + ".quix.ai/hub";
+      value$.subscribe(({ bearerToken, workspaceId, portalApi, messagesTopic, sentimentTopic }) => {
+        this.token = this.stripLineFeed(bearerToken);
+        this.workspaceId = this.stripLineFeed(workspaceId);
+        this.messagesTopic = this.stripLineFeed(this.workspaceId + '-' + messagesTopic);
+        this.sentimentTopic = this.stripLineFeed(this.workspaceId + '-' + sentimentTopic);
 
-      this.InitCompleted.next(this.topic);
-    });
+        portalApi = portalApi.replace("\n", "");
+        let matches = portalApi.match(this.domainRegex);
+        if(matches) {
+          this.subdomain = matches[1];
+        }
+        else {
+          this.subdomain = "platform"; // default to prod
+        }
 
+        this.setUpHubConnections(this.workspaceId);
+      });
+    }
+  }
+
+  private setUpHubConnections(workspaceId: string): void {
+    const options: IHttpConnectionOptions = {
+      accessTokenFactory: () => this.token,
+    };
+
+    this.readerHubConnection = this.createHubConnection(`https://reader-${workspaceId}.${this.subdomain}.quix.io/hub`, options, true);
+    this.startConnection(true, this.readerReconnectAttempts);
+  
+    this.writerHubConnection = this.createHubConnection(`https://writer-${workspaceId}.${this.subdomain}.quix.io/hub`, options, false);
+    this.startConnection(false, this.writerReconnectAttempts);
   }
 
   /**
-   * Makes the initial connection to Quix.
+   * Creates a new hub connection.
+   * 
+   * @param url The url of the SignalR connection.
+   * @param options The options for the hub.
+   * @param isReader Whether it's the ReaderHub or WriterHub.
    *
-   * If we have already connected then we can just return and
-   * skip the process.
-   *
-   * @param quixToken the Quix token needed to authenticate the connection
-   * @param readerUrl the Url we are connecting to
-   * @returns
+   * @returns The newly created hub connection.
    */
-  public ConnectToQuix(): Promise<HubConnection> {
+  private createHubConnection(url: string, options: IHttpConnectionOptions, isReader: boolean): HubConnection {
+    const hubConnection = new HubConnectionBuilder()
+      .withUrl(url,options)
+      .build();
 
-    const options = {
-      accessTokenFactory: () => this.token
-    };
+    const hubName = isReader ? 'Reader' : 'Writer';
+    hubConnection.onclose((error) => {
+      console.log(`Quix Service - ${hubName} | Connection closed. Reconnecting... `, error);
+      this.tryReconnect(isReader, isReader ? this.readerReconnectAttempts : this.writerReconnectAttempts);
+    })
+    return hubConnection;
+  }
 
-    this.connection = new HubConnectionBuilder()
-        .withAutomaticReconnect()
-        .withUrl(this.baseReaderUrl, options)
-        .build();
+  /**
+   * Handles the initial logic of starting the hub connection. If it falls
+   * over in this process then it will attempt to reconnect.
+   * 
+   * @param isReader Whether it's the ReaderHub or WriterHub.
+   * @param reconnectAttempts The number of attempts to reconnect.
+   */
+  private startConnection(isReader: boolean, reconnectAttempts: number): void {
+    const hubConnection = isReader ? this.readerHubConnection : this.writerHubConnection;
+    const subject = isReader ? this.readerConnStatusChanged : this.writerConnStatusChanged;
+    const hubName = isReader ? 'Reader' : 'Writer';
 
-    this.connection.onreconnecting(e => {
-    });
-    this.connection.onreconnected(e => {
-    });
-    this.connection.onclose(e => {
-    });
+    if (!hubConnection || hubConnection.state === 'Disconnected') {
 
-    return this.connection.start().then(() => {
-      console.log("Connected to Quix!");
-      return this.connection;
+      hubConnection.start()
+        .then(() => {
+          console.log(`QuixService - ${hubName} | Connection established!`);
+          reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+          subject.next(ConnectionStatus.Connected);
+
+          // If it's reader hub connection then we create listeners for data
+          if (isReader && !this.hasReaderHubListeners) {
+            this.setupReaderHubListeners(hubConnection);
+            this.hasReaderHubListeners = true;
+          }
+        })
+        .catch(err => {
+          console.error(`QuixService - ${hubName} | Error while starting connection!`, err);
+          subject.next(ConnectionStatus.Reconnecting)
+          this.tryReconnect(isReader, reconnectAttempts);
+        });
+    }
+  }
+
+  /**
+   * Creates listeners on the ReaderHub connection for both parameters
+   * and events so that we can detect when something changes. This can then
+   * be emitted to any components listening.
+   * 
+   * @param readerHubConnection The readerHubConnection we are listening to.
+   */
+  private setupReaderHubListeners(readerHubConnection: HubConnection): void {
+    // Listen for parameter data and emit
+    readerHubConnection.on("ParameterDataReceived", (payload: ParameterData) => {
+      this.paramDataReceived.next(payload);
     });
+    
+    // Listen for event data and emit
+    readerHubConnection.on("EventDataReceived", (payload: EventData) => {
+      this.eventDataReceived.next(payload);
+    });
+  }
+
+  /**
+   * Handles the reconnection for a hub connection. Will continiously
+   * attempt to reconnect to the hub when the connection drops out. It does
+   * so with a timer of 5 seconds to prevent a spam of requests and gives it a
+   * chance to reconnect.
+   * 
+   * @param isReader Whether it's the ReaderHub or WriterHub.
+   * @param reconnectAttempts The number of attempts to reconnect.
+   */
+  private tryReconnect(isReader: boolean, reconnectAttempts: number) {
+    const hubName = isReader ? 'Reader' : 'Writer';
+      reconnectAttempts++;
+      setTimeout(() => {
+        console.log(`QuixService - ${hubName} | Attempting reconnection... (${reconnectAttempts})`);
+        this.startConnection(isReader, reconnectAttempts)
+      },this.reconnectInterval);
+   
+  }
+
+  /**
+   * Subscribes to a parameter on the ReaderHub connection so
+   * we can listen to changes.
+   * 
+   * @param topic The topic being wrote to.
+   * @param streamId The id of the stream.
+   * @param parameterId The parameter want to listen for changes.
+   */
+  public subscribeToParameter(topic: string, streamId: string, parameterId: string) {
+    // console.log(`QuixService Reader | Subscribing to parameter - ${topic}, ${streamId}, ${parameterId}`);
+    this.readerHubConnection.invoke("SubscribeToParameter", topic, streamId, parameterId);
+  }
+
+  /**
+   * Unsubscribe from a parameter on the ReaderHub connection
+   * so we no longer recieve changes.
+   * 
+   * @param topic 
+   * @param streamId 
+   * @param parameterId 
+   */
+  public unsubscribeFromParameter(topic: string, streamId: string, parameterId: string) {
+    // console.log(`QuixService Reader | Unsubscribing from parameter - ${topic}, ${streamId}, ${parameterId}`);
+    this.readerHubConnection.invoke("UnsubscribeFromParameter", topic, streamId, parameterId);
+  }
+
+  /**
+   * Sends parameter data to Quix using the WriterHub connection.
+   * 
+   * @param topic The name of the topic we are writing to.
+   * @param streamId The id of the stream.
+   * @param payload The payload of data we are sending.
+   */
+  public sendParameterData(topic: string, streamId: string, payload: any): void {
+    // console.log("QuixService Sending parameter data!", topic, streamId, payload);
+    this.writerHubConnection.invoke("SendParameterData", topic, streamId, payload);
+  }
+
+
+  /**
+   * Uses the telemetry data api to retrieve persisted parameter
+   * data for a specific criteria.
+   * 
+   * @param payload The payload that we are querying with.
+   * @returns The persisted parameter data.
+   */
+  public retrievePersistedParameterData(payload: any): Observable<ParameterData> {
+    return this.httpClient.post<ParameterData>(
+      `https://telemetry-query-${this.workspaceId}.${this.subdomain}.quix.ai/parameters/data`,
+      payload,
+      {
+        headers: { 'Authorization': 'bearer ' + this.token }
+      }
+    );
+  }
+
+  private stripLineFeed(s: string): string {
+    return s.replace('\n', '');
   }
 
 }

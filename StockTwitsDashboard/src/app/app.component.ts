@@ -1,143 +1,93 @@
-import { Component, OnInit } from '@angular/core';
-import { HubConnection } from "@microsoft/signalr";
-import { ParameterData } from "./models/parameter-data";
-import { QuixService } from "./services/quix.service"
-import { MatSelectChange } from '@angular/material/select';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { ConnectionStatus, QuixService } from './services/quix.service';
+import { Subject, filter, take, takeUntil } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { MessagePayload } from './models/messagePayload';
+import { ParameterData } from './models/parameterPayload';
+import { MaterialModule } from './material.module';
+
+
+export const POSITIVE_THRESHOLD = 0.5;
+export const NEGATIVE_THRESHOLD = -0.5;
+
+export interface Message {
+  timestamp: Date;
+  message: string;
+  sentiment: { label: string, score: number }
+}
 
 @Component({
   selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, CommonModule, MaterialModule],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit {
-  popularObjectTypes = ['bicycle', 'bus', 'car', 'motorbike', 'person', 'traffic light', 'truck'];
-  otherObjectTypes = ['aeroplane', 'apple', 'banana', 'backpack', 'bed', 'bench', 'bird', 'boat', 'book', 'bottle', 'bowl', 'broccoli', 'cake', 'carrot', 'cat'];
+export class AppComponent implements OnInit, OnDestroy {
+  title = 'stockTwitsDashboard';
+  connectionState = ConnectionStatus;
+  readerConnectionStatus: ConnectionStatus = ConnectionStatus.Offline;
+  writerConnectionStatus: ConnectionStatus = ConnectionStatus.Offline;
 
-  private topic: string;
+  messages: Message[] = [];
 
-  latitude: number = 51.5072;
-  longitude: number = -0.1000;
-  public map: any;
-  public last_image: string;
-  private markers: any[] = new Array();
-  connection: HubConnection;
-  selectedObject: string = "";
+  private unsubscribe$ = new Subject<void>();
 
-  constructor(private envVarService: QuixService) { }
+  constructor(private quixService: QuixService) {}
 
   ngOnInit(): void {
-    console.log("INIT APP.Component");
-
-    this.envVarService.InitCompleted.subscribe(topic => {
-      console.log("Init completed: " + topic);
-      this.topic = topic;
-      this.envVarService.ConnectToQuix().then(connection => {
-        this.connection = connection;
-        this.subscribeToData(topic);
+    // Listen for connection status changes
+    this.quixService.readerConnStatusChanged$
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe((status) => {
+        this.readerConnectionStatus = status;
       });
-    });
-
-    if(this.envVarService.workingLocally){
-      this.topic = this.envVarService.topic;
-      this.envVarService.ConnectToQuix().then(connection => {
-        this.connection = connection;
-        this.subscribeToData(this.topic);
-      });
-    }
-
-    this.selectedObject = "car";
-  }
-
-  /**
-   * Using the topic, we can subscribe to the data being outputted
-   * by quix.
-   * 
-   * @param quixTopic the topic we want to retrieve data for
-   */
-  subscribeToData(quixTopic: string) {
-    this.connection.on("ParameterDataReceived", (data: ParameterData) => {
-      if (data.stringValues["image"]) {
-        let imageBinary = data.stringValues["image"][0];
-        this.last_image = "data:image/png;base64," + imageBinary;
-      }
-
-      var markerIcon = {
-        path: google.maps.SymbolPath.CIRCLE,
-        fillOpacity: 1,
-        fillColor: '#fff',
-        strokeOpacity: 1,
-        strokeWeight: 1,
-        strokeColor: '#333',
-        scale: 12
-      };
-
-      var gMarker = new google.maps.Marker({
-        map: this.map,
-        position: {
-          lat: data.numericValues["lat"][0],
-          lng: data.numericValues["lon"][0]
-        },
-        title: 'Number 123',
-        icon: markerIcon,
-        label: {
-          color: '#000', fontSize: '12px', fontWeight: '600',
-          text: data.numericValues[this.selectedObject][0].toString()
-        }
+    this.quixService.writerConnStatusChanged$
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe((status) => {
+        this.writerConnectionStatus = status;
       });
 
-      this.markers.push(gMarker);
-      if (this.markers.length > 1000) {
-        this.markers.shift();
-      }
+    this.quixService.readerConnStatusChanged$.pipe(filter((f) => f === this.connectionState.Connected), take(1)).subscribe(() => {
+      this.quixService.subscribeToParameter('messages4', 'message', '*');
+      this.quixService.subscribeToParameter('messages-with-sentiment', 'CSV_DATA_083', '*');
+    })
 
-    });
-
-    this.connection.invoke("SubscribeToParameter", quixTopic, "image-feed", "image");
-    this.connection.invoke("SubscribeToParameter", quixTopic, "image-feed", "lat");
-    this.connection.invoke("SubscribeToParameter", quixTopic, "image-feed", this.selectedObject);
-    this.connection.invoke("SubscribeToParameter", quixTopic, "image-feed", "lon");
+    // Listen for reader messages
+    this.quixService.paramDataReceived$
+      .pipe(
+        takeUntil(this.unsubscribe$),
+        //filter((f) => f.streamId === this.roomService.selectedRoom) // Ensure there is no message leaks
+      )
+      .subscribe((payload) => {
+        console.log('PAYLOAD RECIEVED', payload);
+        this.messageReceived(payload);
+      });
   }
 
-  /**
-   * Triggered when the map is initialized.
-   * @param map the map object
-   */
-  onMapReady(map: any) {
-    this.map = map;
+  messageReceived(payload: ParameterData): void {
+    const { topicName } = payload;
+    const timestamp = payload.timestamps?.at(0)!;
+    const label = payload.stringValues['label']?.at(0)!;
+    const text = payload.stringValues['text']?.at(0)!;
+    const score = payload.numericValues['score']?.at(0)!;
+
+    const newMessage: Message = {
+      message: text,
+      sentiment: {
+        label,
+        score
+      },
+      timestamp: new Date(timestamp)
+    }
+
+    console.log('Adding new mssag', newMessage);
+    this.messages.push(newMessage);
   }
 
-  showImages: boolean = true;
-
-  /**
-   * Loop through old markers and remove them from the map
-   * for the new selected object. Also unsubscribes from the old
-   * selected parameter and subscribes to the new.
-
-  * @param newSelectedObject the newly selected object
-   */
-  public selectedObjectChanged(event: MatSelectChange) {
-    const { value } = event;
-    for (let i = 0; i < this.markers.length; i++) {
-      this.markers[i].setMap(null);
-    }
-    this.connection?.invoke("UnsubscribeFromParameter", this.topic, "image-feed", this.selectedObject);
-    this.connection?.invoke("SubscribeToParameter", this.topic, "image-feed", value);
-    this.selectedObject = value;
-  }
-
-  /**
-   * Toggles the feed stream.
-   * 
-   * If it's currently running then unsubscribe from the parameter.
-   * Else we can resubscribe to it to resume retrieving data. 
-   */
-  public toggleFeed() {
-    this.showImages =! this.showImages;
-    if (!this.showImages) {
-      this.connection.invoke("UnsubscribeFromParameter", this.topic, "image-feed", "image");
-    }
-    else {
-      this.connection.invoke("SubscribeToParameter", this.topic, "image-feed", "image");
-    }
+  ngOnDestroy(): void {
+    this.unsubscribe$.next();
+    this.unsubscribe$.complete();
   }
 }

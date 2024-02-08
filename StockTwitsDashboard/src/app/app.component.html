@@ -1,50 +1,65 @@
-<mat-drawer-container class="example-container">
-  <mat-drawer-content>
-    <header>
-      <mat-toolbar>
-        <a routerLink="/lobby" routerLinkActive="active" class="logo" [style.marginRight.px]="30">
-          <img src="assets/quix-logo.svg" alt="Quix" width="40" />
-        </a>
-        <span class="mat-h3 m-0">Image recognition demo</span>
-      </mat-toolbar>
-    </header>
-    <main>
-      <div fxFlex fxLayout="column" fxLayout.gt-xs="row" fxLayoutGap.xs="0" fxLayoutGap.gt-xs="40">
-        
-        <!-- Live feed Section -->
-        <div fxLayout="column" fxFlex.gt-xs="50" fxFlex.gt-sm="400px">
-          <div fxLayout="row" fxLayoutAlign="space-between center">
-            <div class="mat-h2 m-0">Image Feed</div>
-            <button mat-raised-button class="toggle-feed" [color]="!showImages ? 'primary' : undefined" (click)="toggleFeed()">{{ showImages ? 'Pause feed' : 'Resume feed' }}</button>
+<!-- <div class="d-flex flex-column p-3">
+  <div class="d-flex border rounded p-2 mb-2" *ngFor="let message of messages">
+    <div class="d-flex flex-column me-4">
+      <div>{{ message.message }}</div>
+      <div>{{ message.timestamp }}</div>
+    </div>
+    <div class="d-flex flex-column align-items-center">
+      <div>{{ message.sentiment.label }}</div>
+      <div>{{ message.sentiment.score }}</div> 
+    </div>
+  </div>
+</div> -->
+
+<mat-drawer-container class="d-flex flex-column h-100">
+  <mat-drawer-content class="d-flex flex-column h-100 p-4">
+    <main class="flex-fill overflow-hidden">
+
+      <div class="d-flex h-100 flex-column justify-content-center align-items-center overflow-auto">
+
+        <div class="d-flex flex-column h-100 w-100 border rounded overflow-auto p-3" [style.maxWidth.px]="400">
+
+          <div class="d-flex border rounded p-2 mb-2 justify-content-between" *ngFor="let message of messages">
+            <div class="d-flex flex-column me-4">
+              <div class="message fw-bold">{{ message.message }}</div>
+              <div class="date">{{ message.timestamp }}</div>
+            </div>
+            <div class="d-flex flex-column align-items-center">
+              <div class="d-flex flex-column align-items-center">
+                <div>
+                  <span *ngIf="message.sentiment.label === 'BULLISH'">⬆️</span>
+                  <span *ngIf="message.sentiment.label === 'NEUTRAL'">😬</span>
+                  <span *ngIf="message.sentiment.label === 'BEARISH'">⬇️</span>
+                </div>
+                <div 
+                [class.text-success]="message.sentiment.label === 'BULLISH'"
+                [class.text-danger]="message.sentiment.label === 'BEARISH'"
+                class="fw-bold date">{{ message.sentiment.label }}</div>
+              </div>
+              <div class="fw-bold date">{{ message.sentiment.score | number : '1.2-2' }}</div> 
+            </div>
           </div>
-          <img class="img" [src]="last_image" width="100%">
 
-          <mat-form-field appearance="outline" class="mt-2">
-            <mat-label>Select object</mat-label>
-            <mat-select [value]="selectedObject" (selectionChange)="selectedObjectChanged($event)">
-              <mat-option class="select-title" disabled>Popular objects</mat-option>
-              <mat-option *ngFor="let type of popularObjectTypes" [value]="type">
-                {{ type | titlecase }}
-              </mat-option>
-              <mat-divider></mat-divider>
-              <mat-option class="select-title" disabled>Other objects</mat-option>
-              <mat-option *ngFor="let type of otherObjectTypes" [value]="type">
-                {{ type | titlecase }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <div [style.fontSize.px]="14" [style.marginBottom.px]="40">Searching for {{ selectedObject }}...</div>
         </div>
+     
 
-        <!-- Map Section -->
-        <div fxFlex.gt-xs="50" fxFlex.gt-sm="100" fxFlex fxLayout="column" class="map-container">
-          <agm-map #map [zoom]="10" [maxZoom]="25" [fitBounds]="false" [latitude]="latitude" [longitude]="longitude"
-            (mapReady)="onMapReady($event)">
-          </agm-map>
-        </div>
-        
       </div>
+
     </main>
+
+
   </mat-drawer-content>
 </mat-drawer-container>
+
+<!-- <div class="d-flex justify-content-center align-items-center" [style.height.vh]="100">
+
+  <mat-card class="d-flex p-0 h-100 w-100" [style.maxWidth.px]="440">
+    <p class="text-danger mat-body-2">lkjdkfldj</p>Hello
+
+    <mat-form-field>
+      <input>
+    </mat-form-field>
+
+  </mat-card>
+
+</div> -->
