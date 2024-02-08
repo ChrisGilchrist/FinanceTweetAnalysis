@@ -20,7 +20,7 @@ app = get_app(use_local_kafka=USE_LOCAL_KAFKA)
 # Set the pipeline
 classifier = pipeline("text-classification", model="StephanAkkerman/FinTwitBERT-sentiment")
 
-input_topic = app.topic(os.environ["input"], value_deserializer=JSONDeserializer())
+input_topic = app.topic(os.environ["input"])
 output_topic = app.topic(os.environ["output"], value_serializer=JSONSerializer())
 
 # Create a StreamingDataFrame instance
