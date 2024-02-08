@@ -18,9 +18,6 @@ USE_LOCAL_KAFKA=os.getenv("use_local_kafka", False)
 # Create an Application.
 app = get_app(use_local_kafka=USE_LOCAL_KAFKA)
 
-# Define a serializer for messages, using JSON Serializer for ease
-serializer = JSONSerializer()
-
 # Define the topic using the "output" environment variable
 topic_name = os.environ["output"]
 topic = app.topic(topic_name)
