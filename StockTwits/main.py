@@ -1,17 +1,30 @@
 import quixstreams as qx
 import os
-
-# Quix injects credentials automatically to the client.
-# Alternatively, you can always pass an SDK token manually as an argument.
-client = qx.QuixStreamingClient()
-
-# Use Input / Output topics to stream data in or out of your service
-producer_topic = client.get_topic_producer(os.environ["output"])
-
 import pandas as pd
 import zipfile
-import os
 import time
+
+# import our get_app function to help with building the app for local/Quix deployed code
+from app_factory import get_app
+
+# import the dotenv module to load environment variables from a file
+from dotenv import load_dotenv
+load_dotenv(override=False)
+
+# get the environment variable value or default to False
+USE_LOCAL_KAFKA=os.getenv("use_local_kafka", False)
+
+# Create an Application.
+app = get_app(use_local_kafka=USE_LOCAL_KAFKA)
+
+# Define a serializer for messages, using JSON Serializer for ease
+serializer = JSONSerializer()
+
+# Define the topic using the "output" environment variable
+topic_name = os.environ["output"]
+topic = app.topic(topic_name)
+
+
 
 # Define the path to the zip file
 zip_file_path = 'messages.csv.zip'
