@@ -4,6 +4,7 @@ import zipfile
 import time
 from quixstreams import Application
 from quixstreams.models.serializers.quix import JSONSerializer, SerializationContext
+import json
 
 
 # import our get_app function to help with building the app for local/Quix deployed code
@@ -69,7 +70,7 @@ if csv_file_path:
         producer.produce(
             topic=topic.name,
             key='message',
-            value=serialized_value
+            value=json.dumps(first_cell_value)
         )
 
         # Wait for one second
