@@ -11,7 +11,6 @@ consumer_topic = client.get_topic_consumer(os.environ["input"])
 producer_topic = client.get_topic_producer(os.environ["output"])
 
 from matplotlib import pyplot as plt
-import fastf1
 import fastf1.plotting
 
 fastf1.plotting.setup_mpl()
