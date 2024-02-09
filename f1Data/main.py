@@ -24,3 +24,5 @@ lap = session.laps.pick_driver(driver).pick_fastest()
 x = lap.telemetry['X']              # values for x-axis
 y = lap.telemetry['Y']              # values for y-axis
 color = lap.telemetry['Speed']      # value to base color gradient on
+
+print(x, y)
