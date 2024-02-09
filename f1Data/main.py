@@ -11,6 +11,7 @@ consumer_topic = client.get_topic_consumer(os.environ["input"])
 producer_topic = client.get_topic_producer(os.environ["output"])
 session = fastf1.get_session(2021, 7, 'Q')
 
-session.name
-session.date
-print(session.date)
+session = fastf1.get_session(2021, 'French Grand Prix', 'Q')
+session.load()
+session.results
+print(session.results)
