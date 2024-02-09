@@ -1,7 +1,14 @@
 /* You can add global styles to this file, and also import other style files */
 /* You can add global styles to this file, and also import other style files */
 html, body { height: 100%; }
-body { margin: 0; }
+body { 
+  margin: 0;
+  background: #0a0b24;
+}
+
+mat-drawer-container {
+  background: radial-gradient(98.61% 99.18% at 50% 0%,rgba(0,100,255,.24) 0%,rgba(0,100,255,0) 100%);
+}
 
 a {
   color: #0064FF;

@@ -30,6 +30,8 @@ export class AppComponent implements OnInit, OnDestroy {
   readerConnectionStatus: ConnectionStatus = ConnectionStatus.Offline;
   writerConnectionStatus: ConnectionStatus = ConnectionStatus.Offline;
 
+  bullCount = 0;
+  bearCount = 0;
   messages: Message[] = [];
 
   private unsubscribe$ = new Subject<void>();
@@ -62,7 +64,7 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe((payload) => {
         console.log('PAYLOAD RECIEVED', payload);
-        this.messageReceived(payload);
+        this.messageReceived(payload);  
       });
   }
 
@@ -72,6 +74,9 @@ export class AppComponent implements OnInit, OnDestroy {
     const label = payload.stringValues['label']?.at(0)!;
     const text = payload.stringValues['text']?.at(0)!;
     const score = payload.numericValues['score']?.at(0)!;
+
+   if (label === 'BULLISH') this.bullCount += 1;
+   if (label === 'BEARISH') this.bearCount += 1;
 
     const newMessage: Message = {
       message: text,
@@ -85,7 +90,7 @@ export class AppComponent implements OnInit, OnDestroy {
     console.log('Adding new mssag', newMessage);
     this.messages.push(newMessage);
   }
-
+  
   ngOnDestroy(): void {
     this.unsubscribe$.next();
     this.unsubscribe$.complete();
