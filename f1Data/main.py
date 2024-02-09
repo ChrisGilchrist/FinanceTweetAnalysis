@@ -1,6 +1,6 @@
 import quixstreams as qx
 import os
-import fastf1
+import fastf1 as ff1
 
 # Quix injects credentials automatically to the client.
 # Alternatively, you can always pass an SDK token manually as an argument.
@@ -9,9 +9,18 @@ client = qx.QuixStreamingClient()
 # Use Input / Output topics to stream data in or out of your service
 consumer_topic = client.get_topic_consumer(os.environ["input"])
 producer_topic = client.get_topic_producer(os.environ["output"])
-session = fastf1.get_session(2021, 7, 'Q')
 
-session = fastf1.get_session(2021, 'French Grand Prix', 'Q')
+year = 2021
+wknd = 9
+ses = 'R'
+driver = 'RIC'
+
+session = ff1.get_session(year, wknd, ses)
+weekend = session.event
 session.load()
-session.results
-print(session.results)
+lap = session.laps.pick_driver(driver).pick_fastest()
+
+# Get telemetry data
+x = lap.telemetry['X']              # values for x-axis
+y = lap.telemetry['Y']              # values for y-axis
+color = lap.telemetry['Speed']      # value to base color gradient on
